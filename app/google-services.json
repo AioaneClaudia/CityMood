@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "89762599174",
+    "project_id": "citymood-f8811",
+    "storage_bucket": "citymood-f8811.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:89762599174:android:473ffd1f30d424e9a18e87",
+        "android_client_info": {
+          "package_name": "com.gefuhlskarte.citymood"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDdTFGq1P8HKHrUqug8yuLAI2lt9fxrAAc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

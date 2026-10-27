@@ -4,12 +4,16 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gefuhlskarte.citymood.data.CityMoodDatabase
+import com.gefuhlskarte.citymood.repository.AuthManager
 import com.gefuhlskarte.citymood.repository.MoodRepository
 import com.gefuhlskarte.citymood.ui_screens.home.HomeScreen
+import com.gefuhlskarte.citymood.ui_screens.login.LoginScreen
 import com.gefuhlskarte.citymood.viewmodel.MoodViewModel
 import com.gefuhlskarte.citymood.viewmodel.MoodViewModelFactory
 
@@ -21,17 +25,24 @@ class MainActivity : ComponentActivity() {
         val database = CityMoodDatabase.getDatabase(applicationContext)
         val repository = MoodRepository(database.moodDao())
         val factory = MoodViewModelFactory(repository)
+        val authManager = AuthManager()
 
         setContent {
             MaterialTheme {
-                val moodViewModel: MoodViewModel = viewModel(
-                    factory = factory
-                )
+                var isLoggedIn by remember { mutableStateOf(authManager.isUserLoggedIn()) }
 
-                HomeScreen(viewModel = moodViewModel)
+                if (!isLoggedIn) {
+                    LoginScreen(
+                        authManager = authManager,
+                        onLoginSuccess = { isLoggedIn = true }
+                    )
+                } else {
+                    val moodViewModel: MoodViewModel = viewModel(
+                        factory = factory
+                    )
+                    HomeScreen(viewModel = moodViewModel)
+                }
             }
         }
     }
 }
-
-
