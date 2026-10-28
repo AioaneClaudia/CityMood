@@ -10,6 +10,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.gefuhlskarte.citymood.repository.AuthManager
+import com.google.firebase.auth.FirebaseUser
 
 @Composable
 fun LoginScreen(
