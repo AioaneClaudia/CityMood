@@ -2,11 +2,14 @@
 package com.gefuhlskarte.citymood.ui_screens.home
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -16,9 +19,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.util.Locale
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gefuhlskarte.citymood.viewmodel.MoodViewModel
-import java.util.Locale
 
 private val Teal = Color(0xFF237C72)
 private val Ink = Color(0xFF243431)
@@ -39,8 +42,10 @@ private val moodOptions = listOf(
 )
 
 @Composable
-fun HomeScreen(viewModel: MoodViewModel) {
-    // Room: lista locala
+fun HomeScreen(
+    viewModel: MoodViewModel,
+    onLogout: () -> Unit
+) {
     val moods by viewModel.moods.collectAsStateWithLifecycle()
 
     // Firestore: lista online si starea conexiunii
@@ -88,22 +93,35 @@ fun HomeScreen(viewModel: MoodViewModel) {
                 .padding(top = 24.dp, bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Header
-            Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+            // Header cu buton de Logout
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "📍 CityMood",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Teal
-                )
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "📍 CityMood",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Teal
+                    )
+                    Text(
+                        text = "Your city, your feelings.",
+                        fontSize = 15.sp,
+                        color = Ink.copy(alpha = 0.7f)
+                    )
+                }
 
-                Text(
-                    text = "Your city, your feelings.",
-                    fontSize = 15.sp,
-                    color = Ink.copy(alpha = 0.7f)
-                )
+                IconButton(onClick = onLogout) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                        contentDescription = "Logout",
+                        tint = Teal
+                    )
+                }
             }
 
             // Introduction
@@ -384,7 +402,7 @@ fun HomeScreen(viewModel: MoodViewModel) {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Recent moods (Room)",
+                    text = "Recent moods",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = Ink

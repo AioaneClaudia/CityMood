@@ -40,7 +40,13 @@ class MainActivity : ComponentActivity() {
                     val moodViewModel: MoodViewModel = viewModel(
                         factory = factory
                     )
-                    HomeScreen(viewModel = moodViewModel)
+                    HomeScreen(
+                        viewModel = moodViewModel,
+                        onLogout = {
+                            authManager.logout()
+                            isLoggedIn = false
+                        }
+                    )
                 }
             }
         }
