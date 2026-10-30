@@ -37,7 +37,6 @@ android {
         compose = true
     }
 }
-
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
@@ -54,17 +53,24 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
-    val roomVersion = "2.8.4"
 
+    // Room Database
+    val roomVersion = "2.8.4"
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
     ksp("androidx.room:room-compiler:$roomVersion")
 
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.4")
+    // Lifecycle Compose (aliniat la o versiune compatibilă)
+    val lifecycleVersion = "2.8.7"
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycleVersion")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:$lifecycleVersion")
+
+    // Firebase (BOM gestionează versiunile)
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
+
+    // Material Icons
     implementation("androidx.compose.material:material-icons-extended")
 
     // CameraX
@@ -74,8 +80,6 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:$cameraxVersion")
     implementation("androidx.camera:camera-view:$cameraxVersion")
 
-    // Google ML Kit Face Detection (On-device, gratuit)
+    // Google ML Kit Face Detection
     implementation("com.google.mlkit:face-detection:16.1.7")
-    implementation("androidx.compose.material:material-icons-extended")
-    implementation("com.google.firebase:firebase-firestore")
 }
