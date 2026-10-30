@@ -42,13 +42,23 @@ private val moodOptions = listOf(
 @Composable
 fun HomeScreen(
     viewModel: MoodViewModel,
-    onLogout: () -> Unit
+    initialMood: String = "Calm",
+    onLogout: () -> Unit,
+    onOpenFaceDetector: () -> Unit
 ) {
     val moods by viewModel.moods.collectAsStateWithLifecycle()
 
     var selectedMood by rememberSaveable {
-        mutableStateOf("Calm")
+        mutableStateOf(initialMood)
     }
+
+    //actualizează cu o stare nouă din camera foto
+    LaunchedEffect(initialMood) {
+        if (initialMood.isNotBlank()) {
+            selectedMood = initialMood
+        }
+    }
+
     var placeName by rememberSaveable {
         mutableStateOf("")
     }
@@ -144,6 +154,19 @@ fun HomeScreen(
                         fontWeight = FontWeight.SemiBold,
                         color = Ink
                     )
+
+                    // buton camera foto
+                    OutlinedButton(
+                        onClick = onOpenFaceDetector,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Text(
+                            text = "📷 Află starea folosind camera",
+                            color = Teal,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
 
                     // Emoji selector
                     Row(

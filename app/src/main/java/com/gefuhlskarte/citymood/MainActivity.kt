@@ -4,14 +4,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gefuhlskarte.citymood.data.CityMoodDatabase
 import com.gefuhlskarte.citymood.repository.AuthManager
 import com.gefuhlskarte.citymood.repository.MoodRepository
+import com.gefuhlskarte.citymood.ui_screens.camera.CameraScreen
 import com.gefuhlskarte.citymood.ui_screens.home.HomeScreen
 import com.gefuhlskarte.citymood.ui_screens.login.LoginScreen
 import com.gefuhlskarte.citymood.viewmodel.MoodViewModel
@@ -30,21 +28,33 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 var isLoggedIn by remember { mutableStateOf(authManager.isUserLoggedIn()) }
+                var showCamera by remember { mutableStateOf(false) }
+                var selectedMoodFromCamera by remember { mutableStateOf("Calm") }
 
                 if (!isLoggedIn) {
                     LoginScreen(
                         authManager = authManager,
                         onLoginSuccess = { isLoggedIn = true }
                     )
-                } else {
-                    val moodViewModel: MoodViewModel = viewModel(
-                        factory = factory
+                } else if (showCamera) {
+                    CameraScreen(
+                        onMoodSelected = { detectedMood ->
+                            selectedMoodFromCamera = detectedMood
+                            showCamera = false
+                        },
+                        onBack = { showCamera = false }
                     )
+                } else {
+                    val moodViewModel: MoodViewModel = viewModel(factory = factory)
                     HomeScreen(
                         viewModel = moodViewModel,
+                        initialMood = selectedMoodFromCamera,
                         onLogout = {
                             authManager.logout()
                             isLoggedIn = false
+                        },
+                        onOpenFaceDetector = {
+                            showCamera = true
                         }
                     )
                 }
