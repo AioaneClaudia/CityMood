@@ -1,4 +1,3 @@
-
 package com.gefuhlskarte.citymood.ui_screens.home
 
 import androidx.compose.foundation.BorderStroke
@@ -547,3 +546,4 @@ fun HomeScreen(
         }
     }
 }
+
