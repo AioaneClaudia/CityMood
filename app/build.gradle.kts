@@ -64,6 +64,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.4")
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-firestore")
     implementation("androidx.compose.material:material-icons-extended")
 
     // CameraX
@@ -76,4 +77,5 @@ dependencies {
     // Google ML Kit Face Detection (On-device, gratuit)
     implementation("com.google.mlkit:face-detection:16.1.7")
     implementation("androidx.compose.material:material-icons-extended")
+    implementation("com.google.firebase:firebase-firestore")
 }

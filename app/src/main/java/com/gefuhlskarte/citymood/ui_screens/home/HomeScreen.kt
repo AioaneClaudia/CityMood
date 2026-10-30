@@ -1,6 +1,7 @@
 package com.gefuhlskarte.citymood.ui_screens.home
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -17,9 +18,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.util.Locale
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gefuhlskarte.citymood.viewmodel.MoodViewModel
-import java.util.Locale
 
 private val Teal = Color(0xFF237C72)
 private val Ink = Color(0xFF243431)
@@ -48,6 +49,19 @@ fun HomeScreen(
 ) {
     val moods by viewModel.moods.collectAsStateWithLifecycle()
 
+    // Firestore: lista online si starea conexiunii
+    val cloudMoods by viewModel.cloudMoods.collectAsStateWithLifecycle()
+    val cloudStatus by viewModel.cloudStatus.collectAsStateWithLifecycle()
+
+    // Porneste listener-ul Firestore cat timp ecranul este afisat
+    DisposableEffect(viewModel) {
+        viewModel.startObservingCloudMoods()
+
+        onDispose {
+            viewModel.stopObservingCloudMoods()
+        }
+    }
+
     var selectedMood by rememberSaveable {
         mutableStateOf(initialMood)
     }
@@ -62,12 +76,15 @@ fun HomeScreen(
     var placeName by rememberSaveable {
         mutableStateOf("")
     }
+
     var valence by rememberSaveable {
         mutableFloatStateOf(0.5f)
     }
+
     var arousal by rememberSaveable {
         mutableFloatStateOf(0.3f)
     }
+
     var message by rememberSaveable {
         mutableStateOf("")
     }
@@ -126,6 +143,7 @@ fun HomeScreen(
                     fontWeight = FontWeight.Bold,
                     color = Ink
                 )
+
                 Text(
                     text = "Capture the mood of a place.",
                     fontSize = 15.sp,
@@ -201,7 +219,11 @@ fun HomeScreen(
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    Text(mood.emoji, fontSize = 28.sp)
+                                    Text(
+                                        text = mood.emoji,
+                                        fontSize = 28.sp
+                                    )
+
                                     Text(
                                         text = mood.label,
                                         fontSize = 11.sp,
@@ -229,25 +251,32 @@ fun HomeScreen(
                             fontWeight = FontWeight.SemiBold,
                             color = Ink
                         )
+
                         Text(
                             text = "How pleasant or unpleasant do you feel?",
                             fontSize = 13.sp,
                             color = Ink.copy(alpha = 0.7f)
                         )
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text("Unpleasant", fontSize = 12.sp)
+
                             Text(
                                 text = String.format(
-                                    Locale.US, "%+.2f", (valence * 2f) - 1f
+                                    Locale.US,
+                                    "%+.2f",
+                                    valence * 2f - 1f
                                 ),
                                 fontWeight = FontWeight.Bold,
                                 color = Teal
                             )
+
                             Text("Pleasant", fontSize = 12.sp)
                         }
+
                         Slider(
                             value = valence,
                             onValueChange = {
@@ -272,23 +301,32 @@ fun HomeScreen(
                             fontWeight = FontWeight.SemiBold,
                             color = Ink
                         )
+
                         Text(
                             text = "How calm or activated do you feel?",
                             fontSize = 13.sp,
                             color = Ink.copy(alpha = 0.7f)
                         )
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text("Calm", fontSize = 12.sp)
+
                             Text(
-                                text = String.format(Locale.US, "%.2f", arousal),
+                                text = String.format(
+                                    Locale.US,
+                                    "%.2f",
+                                    arousal
+                                ),
                                 fontWeight = FontWeight.Bold,
                                 color = Teal
                             )
+
                             Text("Highly activated", fontSize = 12.sp)
                         }
+
                         Slider(
                             value = arousal,
                             onValueChange = {
@@ -312,6 +350,7 @@ fun HomeScreen(
                         fontWeight = FontWeight.SemiBold,
                         color = Ink
                     )
+
                     OutlinedTextField(
                         value = placeName,
                         onValueChange = {
@@ -326,7 +365,7 @@ fun HomeScreen(
                         shape = RoundedCornerShape(14.dp)
                     )
 
-                    // Save button
+                    // Save to Room and Firestore
                     Button(
                         onClick = {
                             val selectedOption = moodOptions.first {
@@ -337,12 +376,12 @@ fun HomeScreen(
                                 placeName = placeName,
                                 moodLabel = selectedMood,
                                 emoji = selectedOption.emoji,
-                                valence = (valence * 2f) - 1f,
+                                valence = valence * 2f - 1f,
                                 arousal = arousal
                             ) { result ->
                                 message = result
 
-                                if (result == "Mood saved successfully!") {
+                                if (result.startsWith("Mood saved locally")) {
                                     placeName = ""
                                 }
                             }
@@ -366,13 +405,20 @@ fun HomeScreen(
                         Text(
                             text = message,
                             fontSize = 14.sp,
-                            color = Teal
+                            color = if (
+                                message.contains("failed", ignoreCase = true) ||
+                                message.contains("could not", ignoreCase = true)
+                            ) {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                Teal
+                            }
                         )
                     }
                 }
             }
 
-            // Recent moods
+            // Recent moods: Room
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -385,7 +431,7 @@ fun HomeScreen(
 
                 if (moods.isEmpty()) {
                     Text(
-                        text = "No moods saved yet. Record your first mood!",
+                        text = "No moods saved locally yet.",
                         fontSize = 14.sp,
                         color = Ink.copy(alpha = 0.7f)
                     )
@@ -440,6 +486,86 @@ fun HomeScreen(
                     }
                 }
             }
+
+            // Online moods: Firestore
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Online moods (Firestore)",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Ink
+                )
+
+                Text(
+                    text = cloudStatus,
+                    fontSize = 13.sp,
+                    color = if (cloudStatus.startsWith("Cloud error:")) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        Ink.copy(alpha = 0.7f)
+                    }
+                )
+
+                if (cloudMoods.isEmpty()) {
+                    Text(
+                        text = "No online moods available yet.",
+                        fontSize = 14.sp,
+                        color = Ink.copy(alpha = 0.7f)
+                    )
+                } else {
+                    cloudMoods.forEach { mood ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color.White
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Text(
+                                    text = mood.emoji,
+                                    fontSize = 30.sp
+                                )
+
+                                Column(
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        text = mood.moodLabel,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Ink
+                                    )
+
+                                    Text(
+                                        text = mood.placeName,
+                                        fontSize = 14.sp,
+                                        color = Ink.copy(alpha = 0.7f)
+                                    )
+
+                                    Text(
+                                        text = "Valence: %.2f · Arousal: %.2f".format(
+                                            Locale.US,
+                                            mood.valence,
+                                            mood.arousal
+                                        ),
+                                        fontSize = 12.sp,
+                                        color = Teal
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
+
