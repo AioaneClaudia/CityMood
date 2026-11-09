@@ -1,3 +1,4 @@
+
 package com.gefuhlskarte.citymood.ui_screens.home
 
 import androidx.compose.foundation.BorderStroke
@@ -45,7 +46,8 @@ fun HomeScreen(
     viewModel: MoodViewModel,
     initialMood: String = "Calm",
     onLogout: () -> Unit,
-    onOpenFaceDetector: () -> Unit
+    onOpenFaceDetector: () -> Unit,
+    onOpenTravelJournal: () -> Unit
 ) {
     val moods by viewModel.moods.collectAsStateWithLifecycle()
 
@@ -66,7 +68,7 @@ fun HomeScreen(
         mutableStateOf(initialMood)
     }
 
-    //actualizează cu o stare nouă din camera foto
+    // Actualizeaza cu o stare noua din camera foto
     LaunchedEffect(initialMood) {
         if (initialMood.isNotBlank()) {
             selectedMood = initialMood
@@ -101,7 +103,8 @@ fun HomeScreen(
                 .padding(top = 24.dp, bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Header cu buton de Logout
+
+            // Header cu butoane de jurnal si logout
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -116,6 +119,7 @@ fun HomeScreen(
                         fontWeight = FontWeight.Bold,
                         color = Teal
                     )
+
                     Text(
                         text = "Your city, your feelings.",
                         fontSize = 15.sp,
@@ -123,13 +127,36 @@ fun HomeScreen(
                     )
                 }
 
-                IconButton(onClick = onLogout) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                        contentDescription = "Logout",
-                        tint = Teal
-                    )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    IconButton(onClick = onLogout) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                            contentDescription = "Logout",
+                            tint = Teal
+                        )
+                    }
                 }
+            }
+
+            // Buton pentru jurnalul de calatorie
+            Button(
+                onClick = onOpenTravelJournal,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Teal
+                )
+            ) {
+                Text(
+                    text = "📖  My Travel Journal",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
 
             // Introduction
@@ -173,7 +200,7 @@ fun HomeScreen(
                         color = Ink
                     )
 
-                    // buton camera foto
+                    // Buton camera foto
                     OutlinedButton(
                         onClick = onOpenFaceDetector,
                         modifier = Modifier.fillMaxWidth(),
@@ -568,4 +595,3 @@ fun HomeScreen(
         }
     }
 }
-

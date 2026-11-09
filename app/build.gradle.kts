@@ -82,4 +82,7 @@ dependencies {
 
     // Google ML Kit Face Detection
     implementation("com.google.mlkit:face-detection:16.1.7")
+
+    implementation("io.coil-kt:coil-compose:2.7.0")
+
 }
