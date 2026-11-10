@@ -83,6 +83,10 @@ dependencies {
     // Google ML Kit Face Detection
     implementation("com.google.mlkit:face-detection:16.1.7")
 
+    //OpentStreetMap
+    implementation("org.osmdroid:osmdroid-android:6.1.18")
+
+
     implementation("io.coil-kt:coil-compose:2.7.0")
 
 }

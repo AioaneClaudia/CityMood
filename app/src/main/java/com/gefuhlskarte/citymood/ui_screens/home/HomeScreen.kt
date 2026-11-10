@@ -47,7 +47,8 @@ fun HomeScreen(
     initialMood: String = "Calm",
     onLogout: () -> Unit,
     onOpenFaceDetector: () -> Unit,
-    onOpenTravelJournal: () -> Unit
+    onOpenTravelJournal: () -> Unit,
+    onOpenMap: () -> Unit
 ) {
     val moods by viewModel.moods.collectAsStateWithLifecycle()
 
@@ -157,6 +158,22 @@ fun HomeScreen(
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
+
+                Button(
+                    onClick = onOpenMap,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Teal)
+                ) {
+                    Text(
+                        text = "🗺️ See map",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
             }
 
             // Introduction
@@ -200,6 +217,7 @@ fun HomeScreen(
                         color = Ink
                     )
 
+
                     // Buton camera foto
                     OutlinedButton(
                         onClick = onOpenFaceDetector,
@@ -207,7 +225,7 @@ fun HomeScreen(
                         shape = RoundedCornerShape(14.dp)
                     ) {
                         Text(
-                            text = "📷 Află starea folosind camera",
+                            text = "📷 Use camera to find out your mood",
                             color = Teal,
                             fontWeight = FontWeight.SemiBold
                         )
