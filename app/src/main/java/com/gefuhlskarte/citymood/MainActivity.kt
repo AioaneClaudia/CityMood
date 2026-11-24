@@ -19,6 +19,7 @@ import com.gefuhlskarte.citymood.ui_screens.camera.CameraScreen
 import com.gefuhlskarte.citymood.ui_screens.home.HomeScreen
 import com.gefuhlskarte.citymood.ui_screens.journal.TravelJournalScreen
 import com.gefuhlskarte.citymood.ui_screens.login.LoginScreen
+import com.gefuhlskarte.citymood.ui_screens.map.MapScreen
 
 import com.gefuhlskarte.citymood.viewmodel.MoodViewModel
 import com.gefuhlskarte.citymood.viewmodel.MoodViewModelFactory
@@ -102,6 +103,15 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+                        "map" -> {
+                            MapScreen(
+                                initialMoodFilter = selectedMoodFromCamera,
+                                onBack = {
+                                    selectedScreen = "home"
+                                }
+                            )
+                        }
+
                         else -> {
                             HomeScreen(
                                 viewModel = moodViewModel,
@@ -116,6 +126,9 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onOpenTravelJournal = {
                                     selectedScreen = "journal"
+                                },
+                                onOpenMap = {
+                                    selectedScreen = "map"
                                 }
                             )
                         }
