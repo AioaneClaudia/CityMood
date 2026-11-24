@@ -25,6 +25,7 @@ class TravelJournalViewModel(
         pageColor: String = "#FFFFF8E7",
         textBackgroundColor: String = "#FFFFE8C2",
         fontStyle: String = "SANS_SERIF",
+        containsFace: Boolean? = null,
         onResult: (String) -> Unit
     ) {
         if (placeName.isBlank()) {
@@ -43,19 +44,18 @@ class TravelJournalViewModel(
                     placeName = placeName.trim(),
                     description = description.trim(),
                     photoUri = photoUri,
+                    containsFace = containsFace,
                     pageColor = pageColor,
                     textBackgroundColor = textBackgroundColor,
                     fontStyle = fontStyle
                 )
 
                 repository.saveEntry(entry)
-
                 onResult("Experiența a fost salvată!")
             } catch (exception: Exception) {
                 onResult(
                     "Eroare la salvare: ${
-                        exception.localizedMessage
-                            ?: "Eroare necunoscută"
+                        exception.localizedMessage ?: "Eroare necunoscută"
                     }"
                 )
             }
@@ -78,13 +78,11 @@ class TravelJournalViewModel(
                         fontStyle = fontStyle
                     )
                 )
-
                 onResult("Personalizarea a fost salvată!")
             } catch (exception: Exception) {
                 onResult(
                     "Nu am putut salva personalizarea: ${
-                        exception.localizedMessage
-                            ?: "Eroare necunoscută"
+                        exception.localizedMessage ?: "Eroare necunoscută"
                     }"
                 )
             }

@@ -12,7 +12,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         MoodEntry::class,
         TravelJournalEntry::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class CityMoodDatabase : RoomDatabase() {
@@ -74,6 +74,15 @@ abstract class CityMoodDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // SQLite stochează valorile Boolean nullable ca INTEGER (0/1).
+                db.execSQL(
+                    "ALTER TABLE travel_journal ADD COLUMN containsFace INTEGER"
+                )
+            }
+        }
+
         fun getDatabase(context: Context): CityMoodDatabase {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
@@ -83,7 +92,8 @@ abstract class CityMoodDatabase : RoomDatabase() {
                 )
                     .addMigrations(
                         MIGRATION_1_2,
-                        MIGRATION_2_3
+                        MIGRATION_2_3,
+                        MIGRATION_3_4
                     )
                     .build()
                     .also { database ->
