@@ -12,7 +12,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         MoodEntry::class,
         TravelJournalEntry::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class CityMoodDatabase : RoomDatabase() {
@@ -83,6 +83,35 @@ abstract class CityMoodDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Metadate de context pentru fiecare stare înregistrată.
+                // Toate coloanele sunt nullable, deci intrările vechi rămân valide.
+                val newColumns = listOf(
+                    "latitude REAL",
+                    "longitude REAL",
+                    "temperature REAL",
+                    "apparentTemperature REAL",
+                    "humidity INTEGER",
+                    "precipitation REAL",
+                    "cloudCover INTEGER",
+                    "windSpeed REAL",
+                    "weatherCode INTEGER",
+                    "weatherDescription TEXT",
+                    "isDay INTEGER",
+                    "hourOfDay INTEGER",
+                    "timeOfDay TEXT",
+                    "dayOfWeek INTEGER",
+                    "isWeekend INTEGER",
+                    "season TEXT",
+                    "socialContext TEXT"
+                )
+                newColumns.forEach { column ->
+                    db.execSQL("ALTER TABLE mood_entries ADD COLUMN $column")
+                }
+            }
+        }
+
         fun getDatabase(context: Context): CityMoodDatabase {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
@@ -93,7 +122,8 @@ abstract class CityMoodDatabase : RoomDatabase() {
                     .addMigrations(
                         MIGRATION_1_2,
                         MIGRATION_2_3,
-                        MIGRATION_3_4
+                        MIGRATION_3_4,
+                        MIGRATION_4_5
                     )
                     .build()
                     .also { database ->

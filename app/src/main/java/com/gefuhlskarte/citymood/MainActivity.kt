@@ -4,12 +4,15 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 
+import com.gefuhlskarte.citymood.context.LocationProvider
 import com.gefuhlskarte.citymood.data.CityMoodDatabase
 import com.gefuhlskarte.citymood.repository.AuthManager
 import com.gefuhlskarte.citymood.repository.MoodRepository
@@ -34,7 +37,8 @@ class MainActivity : ComponentActivity() {
         val database = CityMoodDatabase.getDatabase(applicationContext)
 
         val moodRepository = MoodRepository(database.moodDao())
-        val moodFactory = MoodViewModelFactory(moodRepository)
+        val locationProvider = LocationProvider(applicationContext)
+        val moodFactory = MoodViewModelFactory(moodRepository, locationProvider)
 
         val journalRepository =
             TravelJournalRepository(database.travelJournalDao())
@@ -104,8 +108,21 @@ class MainActivity : ComponentActivity() {
                         }
 
                         "map" -> {
+                            // Stările tuturor utilizatorilor, ascultate doar cât timp harta e deschisă
+                            DisposableEffect(moodViewModel) {
+                                moodViewModel.startObservingCommunityMoods()
+                                onDispose { moodViewModel.stopObservingCommunityMoods() }
+                            }
+
+                            val communityMoods by moodViewModel.communityMoods
+                                .collectAsStateWithLifecycle()
+                            val communityStatus by moodViewModel.communityStatus
+                                .collectAsStateWithLifecycle()
+
                             MapScreen(
                                 initialMoodFilter = selectedMoodFromCamera,
+                                communityMoods = communityMoods,
+                                communityStatus = communityStatus,
                                 onBack = {
                                     selectedScreen = "home"
                                 }

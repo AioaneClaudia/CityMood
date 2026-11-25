@@ -29,6 +29,10 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.gefuhlskarte.citymood.aggregation.PlaceMoodAggregator
+import com.gefuhlskarte.citymood.aggregation.PlaceMoodStats
+import com.gefuhlskarte.citymood.data.cloud.CloudMood
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -140,6 +144,8 @@ suspend fun searchRealPlacesInCluj(
 @Composable
 fun MapScreen(
     initialMoodFilter: String = "Toate",
+    communityMoods: List<CloudMood> = emptyList(),
+    communityStatus: String = "",
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -198,9 +204,58 @@ fun MapScreen(
         }
     }
 
+    // Locuri noi, apărute din stările utilizatorilor salvate în afara locurilor
+    // cunoscute ale hărții (grupate pe o rază de 100 m).
+    val communityClusters = remember(communityMoods, onlineLocations) {
+        PlaceMoodAggregator.clusterUnmatched(
+            moods = communityMoods,
+            knownPlaces = (initialClujLocations + onlineLocations)
+                .map { it.latitude to it.longitude }
+        )
+    }
+
+    val communityLocations = remember(communityClusters) {
+        communityClusters.mapIndexed { index, cluster ->
+            ClujLocation(
+                id = "community_$index",
+                name = cluster.name,
+                category = "Adăugat de utilizatori",
+                dominantMood = "",
+                moodEmoji = "📍",
+                latitude = cluster.latitude,
+                longitude = cluster.longitude,
+                address = "Loc marcat de utilizatori"
+            )
+        }
+    }
+
+    // Starea generală a fiecărui loc, calculată din stările tuturor utilizatorilor
+    // salvate la cel mult 100 m de el. Cheia este id-ul locului.
+    val placeStats: Map<String, PlaceMoodStats> =
+        remember(communityMoods, onlineLocations, communityClusters) {
+            val known = (initialClujLocations + onlineLocations)
+                .mapNotNull { loc ->
+                    PlaceMoodAggregator.statsFor(loc.latitude, loc.longitude, communityMoods)
+                        ?.let { loc.id to it }
+                }
+
+            val fromClusters = communityClusters.mapIndexedNotNull { index, cluster ->
+                PlaceMoodAggregator.statsOf(cluster.moods)?.let { "community_$index" to it }
+            }
+
+            (known + fromClusters).toMap()
+        }
+
+    // Dacă un loc are stări înregistrate, starea lui dominantă vine din date reale,
+    // nu din valoarea pusă inițial în cod.
+    fun ClujLocation.withRealMood(): ClujLocation {
+        val stats = placeStats[id] ?: return this
+        return copy(dominantMood = stats.dominantMood, moodEmoji = stats.dominantEmoji)
+    }
+
     // Locațiile afișate pe hartă (combină căutarea live cu recomandările pe stări)
-    val displayedLocations = remember(searchQuery, selectedCategory, selectedMood, onlineLocations) {
-        val localMatches = initialClujLocations.filter { loc ->
+    val displayedLocations = remember(searchQuery, selectedCategory, selectedMood, onlineLocations, placeStats, communityLocations) {
+        val localMatches = (initialClujLocations + communityLocations).map { it.withRealMood() }.filter { loc ->
             val matchesSearch = searchQuery.isBlank() ||
                     loc.name.contains(searchQuery, ignoreCase = true) ||
                     loc.category.contains(searchQuery, ignoreCase = true)
@@ -215,7 +270,7 @@ fun MapScreen(
         }
 
         if (onlineLocations.isNotEmpty()) {
-            (onlineLocations + localMatches).distinctBy { it.name.lowercase() }
+            (onlineLocations.map { it.withRealMood() } + localMatches).distinctBy { it.name.lowercase() }
         } else {
             localMatches
         }
@@ -543,12 +598,56 @@ fun MapScreen(
 
                     HorizontalDivider(color = Color.LightGray.copy(alpha = 0.4f))
 
-                    Text(
-                        text = "Atmosferă asociată: ${place.moodEmoji} ${place.dominantMood}",
-                        fontWeight = FontWeight.SemiBold,
-                        color = Teal,
-                        fontSize = 14.sp
-                    )
+                    val stats = placeStats[place.id]
+
+                    if (stats != null) {
+                        Text(
+                            text = "Atmosferă generală: ${stats.dominantEmoji} ${stats.dominantMood}",
+                            fontWeight = FontWeight.SemiBold,
+                            color = Teal,
+                            fontSize = 14.sp
+                        )
+
+                        Text(
+                            text = String.format(
+                                Locale.US,
+                                "Din %d %s · valență medie %+.2f · activare medie %.2f",
+                                stats.count,
+                                if (stats.count == 1) "stare" else "stări",
+                                stats.averageValence,
+                                stats.averageArousal
+                            ),
+                            fontSize = 12.sp,
+                            color = Ink.copy(alpha = 0.8f)
+                        )
+
+                        Text(
+                            text = stats.moodCounts.joinToString("  ") { (label, n) -> "$label: $n" },
+                            fontSize = 12.sp,
+                            color = Color.Gray
+                        )
+                    } else {
+                        Text(
+                            text = "Atmosferă asociată: ${place.moodEmoji} ${place.dominantMood}",
+                            fontWeight = FontWeight.SemiBold,
+                            color = Teal,
+                            fontSize = 14.sp
+                        )
+
+                        Text(
+                            text = "Încă nu există stări înregistrate aici (valoare de exemplu).",
+                            fontSize = 12.sp,
+                            color = Color.Gray
+                        )
+                    }
+
+                    if (communityStatus.isNotBlank()) {
+                        Text(
+                            text = communityStatus,
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             }
         }

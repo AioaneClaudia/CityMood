@@ -1,6 +1,9 @@
 
 package com.gefuhlskarte.citymood.ui_screens.home
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -21,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.util.Locale
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.gefuhlskarte.citymood.context.SocialContext
+import com.gefuhlskarte.citymood.context.WeatherService
 import com.gefuhlskarte.citymood.viewmodel.MoodViewModel
 
 private val Teal = Color(0xFF237C72)
@@ -92,6 +97,26 @@ fun HomeScreen(
         mutableStateOf("")
     }
 
+    // Cu cine este utilizatorul (salvăm cheia, ex. "friends")
+    var socialContextKey by rememberSaveable {
+        mutableStateOf<String?>(null)
+    }
+
+    // Cerem permisiunea de locație o singură dată, la deschiderea ecranului.
+    // Dacă utilizatorul refuză, aplicația merge în continuare, doar fără locație și vreme.
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { /* rezultatul e verificat la salvare, în LocationProvider */ }
+
+    LaunchedEffect(Unit) {
+        locationPermissionLauncher.launch(
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        )
+    }
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = CanvasColor
@@ -158,22 +183,23 @@ fun HomeScreen(
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
+            }
 
-                Button(
-                    onClick = onOpenMap,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Teal)
-                ) {
-                    Text(
-                        text = "🗺️ See map",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
+            // Buton pentru hartă
+            Button(
+                onClick = onOpenMap,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Teal)
+            ) {
+                Text(
+                    text = "🗺️ See map",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
             }
 
             // Introduction
@@ -410,6 +436,41 @@ fun HomeScreen(
                         shape = RoundedCornerShape(14.dp)
                     )
 
+                    HorizontalDivider(color = CanvasColor)
+
+                    // Cu cine ești?
+                    Text(
+                        text = "Who are you with?",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Ink
+                    )
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        SocialContext.entries.forEach { option ->
+                            val selected = socialContextKey == option.key
+
+                            FilterChip(
+                                selected = selected,
+                                onClick = {
+                                    // a doua apăsare deselectează
+                                    socialContextKey = if (selected) null else option.key
+                                    message = ""
+                                },
+                                label = { Text("${option.emoji} ${option.label}") },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = Lavender,
+                                    selectedLabelColor = Ink
+                                )
+                            )
+                        }
+                    }
+
                     // Save to Room and Firestore
                     Button(
                         onClick = {
@@ -422,12 +483,14 @@ fun HomeScreen(
                                 moodLabel = selectedMood,
                                 emoji = selectedOption.emoji,
                                 valence = valence * 2f - 1f,
-                                arousal = arousal
+                                arousal = arousal,
+                                socialContext = SocialContext.fromKey(socialContextKey)
                             ) { result ->
                                 message = result
 
                                 if (result.startsWith("Mood saved locally")) {
                                     placeName = ""
+                                    socialContextKey = null
                                 }
                             }
                         },
@@ -525,6 +588,21 @@ fun HomeScreen(
                                         fontSize = 12.sp,
                                         color = Teal
                                     )
+
+                                    val contextLine = contextSummary(
+                                        temperature = mood.temperature,
+                                        weatherDescription = mood.weatherDescription,
+                                        timeOfDay = mood.timeOfDay,
+                                        season = mood.season,
+                                        socialContext = mood.socialContext
+                                    )
+                                    if (contextLine.isNotBlank()) {
+                                        Text(
+                                            text = contextLine,
+                                            fontSize = 12.sp,
+                                            color = Ink.copy(alpha = 0.6f)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -604,6 +682,21 @@ fun HomeScreen(
                                         fontSize = 12.sp,
                                         color = Teal
                                     )
+
+                                    val contextLine = contextSummary(
+                                        temperature = mood.temperature,
+                                        weatherDescription = mood.weatherDescription,
+                                        timeOfDay = mood.timeOfDay,
+                                        season = mood.season,
+                                        socialContext = mood.socialContext
+                                    )
+                                    if (contextLine.isNotBlank()) {
+                                        Text(
+                                            text = contextLine,
+                                            fontSize = 12.sp,
+                                            color = Ink.copy(alpha = 0.6f)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -612,4 +705,26 @@ fun HomeScreen(
             }
         }
     }
+}
+
+/** Ex.: "🌧️ 7°C · evening · autumn · 👯 Friends" */
+private fun contextSummary(
+    temperature: Double?,
+    weatherDescription: String?,
+    timeOfDay: String?,
+    season: String?,
+    socialContext: String?
+): String {
+    val parts = mutableListOf<String>()
+
+    if (temperature != null || weatherDescription != null) {
+        val emoji = WeatherService.emojiFor(weatherDescription)
+        val temp = temperature?.let { String.format(Locale.US, "%.0f°C", it) } ?: ""
+        parts += "$emoji $temp".trim()
+    }
+    timeOfDay?.let { parts += it }
+    season?.let { parts += it }
+    SocialContext.fromKey(socialContext)?.let { parts += "${it.emoji} ${it.label}" }
+
+    return parts.joinToString(" · ")
 }
